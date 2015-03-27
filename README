@@ -1,0 +1,4 @@
+The eventual replacement of the case-acm-docker bash script.
+
+To use, create a virtualenv, and install what's in requirements.txt.  
+If you really need more instructions, shoot me (Matthew Bentley) an email.
