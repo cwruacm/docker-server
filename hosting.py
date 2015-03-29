@@ -1,9 +1,12 @@
 import sqlite3
-# import iptc
+import iptc
 import argparse
 from docker import Client
+from pyroute2 import IPRoute
 
-docker_client = Client(base_url='unix://var/run/docker.sock')
+DOCKER_VERSION = '1.14'
+d_client = Client(base_url='unix://var/run/docker.sock',
+                  version=DOCKER_VERSION)
 
 
 class container(object):
@@ -24,6 +27,7 @@ class container(object):
                 values = (name, mac, container_name, mount_loc, args)
                 c.execute('INSERT INTO containers VALUES (?,?,?,?,?)', values)
             self.db_to_object(name)
+        self.get_state()
 
     def db_to_object(self, name):
         c = self.conn.cursor()
@@ -38,6 +42,29 @@ class container(object):
             return True
         else:
             return False
+
+    def get_state(self):
+        try:
+            ip = IPRoute()
+            self.ipdev = ip.link_lookup(finame=self.name)[0]
+            self.ip_addr = {e[0]: e[1] for e in
+                            ip.get_addr(index=self.ipdev, family=2)[0]['attrs']
+                            }['IFA_ADDRESS']
+        except IndexError:
+            self.ipdev = False
+            self.ip_addr = False
+        self.container_running = '/' + self.name in [e['Names'][0] for e in
+                                                     d_client.containers()]
+
+        table = iptc.Table(iptc.Table.NAT)
+        try:
+            self.chain = {
+                e.name: e for e in table.chains
+            }[
+                'BRIDGE-' + self.name.upper()
+            ]
+        except KeyError:
+            self.chain = False
 
     @staticmethod
     def init_db(dbname):
