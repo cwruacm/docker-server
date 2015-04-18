@@ -46,7 +46,7 @@ class container(object):
     def get_state(self):
         try:
             ip = IPRoute()
-            self.ipdev = ip.link_lookup(finame=self.name)[0]
+            self.ipdev = ip.link_lookup(ifname=self.name)[0]
             self.ip_addr = {e[0]: e[1] for e in
                             ip.get_addr(index=self.ipdev, family=2)[0]['attrs']
                             }['IFA_ADDRESS']
